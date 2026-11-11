@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useTheme } from "next-themes";
 import ThemeIcon from "./theme-icon";
 
 const LINKS = [
@@ -14,14 +15,13 @@ const LINKS = [
 const ITEM = "transition-opacity duration-150 hover:opacity-100 focus-visible:opacity-100 outline-none";
 
 type TopNavProps = {
-    isLight: boolean;
-    toggleTheme: () => void;
     /** The nav is sitting over a dark cover image, so it uses light text whatever the theme. */
     overCover?: boolean;
 };
 
-export default function TopNav({ isLight, toggleTheme, overCover = false }: TopNavProps) {
+export default function TopNav({ overCover = false }: TopNavProps) {
     const pathname = usePathname();
+    const { resolvedTheme, setTheme } = useTheme();
     // A project's own page still counts as being in projects.
     const active = (href: string) => pathname === href || (href !== "/" && pathname.startsWith(`${href}/`));
 
@@ -30,7 +30,7 @@ export default function TopNav({ isLight, toggleTheme, overCover = false }: TopN
             data-koi-avoid
             aria-label="Main"
             // Named for view transitions, so the nav stays in place instead of fading out with the rest of the page.
-            className={`fixed inset-x-0 top-0 z-30 flex items-center justify-center gap-8 pt-8 font-geistMono text-[13px] lowercase transition-colors duration-200 [view-transition-name:site-nav] ${
+            className={`fixed inset-x-0 top-0 z-30 flex max-lg:hidden items-center justify-center gap-8 pt-8 font-geistMono text-[13px] lowercase transition-colors duration-200 [view-transition-name:site-nav] ${
                 overCover ? "text-dark-foreground" : "text-foreground"
             }`}
         >
@@ -48,11 +48,11 @@ export default function TopNav({ isLight, toggleTheme, overCover = false }: TopN
             <span data-koi-ignore className="-m-4 flex p-4">
                 <button
                     type="button"
-                    onClick={toggleTheme}
-                    aria-label={`Switch to ${isLight ? "dark" : "light"} mode`}
+                    onClick={() => setTheme(resolvedTheme === "light" ? "dark" : "light")}
+                    aria-label="Toggle theme"
                     className={`${ITEM} opacity-50`}
                 >
-                    <ThemeIcon isLight={isLight} size={15} />
+                    <ThemeIcon size={15} />
                 </button>
             </span>
         </nav>

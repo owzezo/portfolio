@@ -1,6 +1,5 @@
 "use client";
-import { motion } from "framer-motion";
-import { useGlobal } from "../../context-providers/global-provider";
+import { motion } from "motion/react";
 import Cited from "./citation";
 import Container from "./container";
 import type { PondStats } from "./koi-pond/koi-pond";
@@ -45,18 +44,18 @@ const Socials = ({ className }: { className?: string }) => (
     </p>
 );
 
-const FrontPage = ({ isLight, stats }: { isLight: boolean; stats: PondStats }) => {
-    const { isMobile } = useGlobal();
+const FrontPage = ({ stats }: { stats: PondStats }) => (
+    <>
+        {mobilePage()}
+        {desktopPage({ stats })}
+    </>
+);
 
-    if (isMobile === null) return null;
-    return isMobile ? mobilePage() : desktopPage({ isLight, stats });
-};
-
-const desktopPage = ({ isLight, stats }: { isLight: boolean; stats: PondStats }) => {
+const desktopPage = ({ stats }: { stats: PondStats }) => {
     return (
         <Container
             as="header"
-            className="relative flex h-full flex-col justify-end gap-10 bg-transparent pb-32 pt-32 text-foreground [@media(max-height:720px)]:gap-6 [@media(max-height:720px)]:pb-12 [@media(max-height:720px)]:pt-20"
+            className="relative flex h-full flex-col justify-end gap-10 max-lg:hidden bg-transparent pb-32 pt-32 text-foreground [@media(max-height:720px)]:gap-6 [@media(max-height:720px)]:pb-12 [@media(max-height:720px)]:pt-20"
         >
             {stats.koi > 0 && (
                 <div
@@ -92,39 +91,18 @@ const desktopPage = ({ isLight, stats }: { isLight: boolean; stats: PondStats })
                 animate={{ opacity: 1 }}
                 transition={{ duration: 0.3, delay: 0.2 }}
             >
-                <h1>Xin chào, I'm Dao.</h1>
+                <h1>Xin chào, I&apos;m Dao.</h1>
                 <p>
-                    Software Engineer @{" "}
-                    <Cited source="googleIncoming" isLight={isLight}>
-                        Google
-                    </Cited>
-                    , passionate about building the future.
+                    Software Engineer @ <Cited source="googleIncoming">Google</Cited>, passionate about building the
+                    future.
                 </p>
                 <p>
-                    Before that,{" "}
-                    <Cited source="google" isLight={isLight}>
-                        Google
-                    </Cited>{" "}
-                    (intern),{" "}
-                    <Cited source="agency" isLight={isLight}>
-                        Agency
-                    </Cited>
-                    , and a few{" "}
-                    <Cited source="startups" isLight={isLight}>
-                        early-stage startups
-                    </Cited>
-                    .
+                    Before that, <Cited source="google">Google</Cited> (intern), <Cited source="agency">Agency</Cited>,
+                    and a few <Cited source="startups">early-stage startups</Cited>.
                 </p>
                 <p>
-                    Currently, building @{" "}
-                    <Cited source="generate" isLight={isLight}>
-                        Generate
-                    </Cited>
-                    , researching @{" "}
-                    <Cited source="parcs" isLight={isLight}>
-                        PARCS Lab
-                    </Cited>
-                    .
+                    Currently, building @ <Cited source="generate">Generate</Cited>, researching @{" "}
+                    <Cited source="parcs">PARCS Lab</Cited>.
                 </p>
                 <Socials className="mt-[1.5vh]" />
             </motion.div>
@@ -144,7 +122,7 @@ const mobilePage = () => {
         // Top padding clears the floating nav pill.
         <Container
             as="header"
-            className="flex h-full flex-col justify-end gap-8 bg-transparent pb-12 pt-28 font-geistMono text-foreground [@media(max-height:640px)]:gap-5 [@media(max-height:640px)]:pb-8"
+            className="flex h-full flex-col justify-end gap-8 lg:hidden bg-transparent pb-12 pt-28 font-geistMono text-foreground [@media(max-height:640px)]:gap-5 [@media(max-height:640px)]:pb-8"
         >
             <motion.blockquote
                 data-koi-avoid

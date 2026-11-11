@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useEffectEvent, useRef } from "react";
+import { useTheme } from "next-themes";
 import posthog from "posthog-js";
 import { cn } from "../../../lib/utils";
 import { KoiRenderer } from "./renderer";
@@ -55,11 +56,9 @@ class PondEngine {
 
     constructor(
         private canvas: HTMLCanvasElement,
-        isLight: boolean,
         private onStats: (stats: PondStats) => void
     ) {
         this.renderer = new KoiRenderer(canvas);
-        this.renderer.setTheme(isLight);
         this.resizeObserver.observe(canvas);
         this.intersectionObserver.observe(canvas);
         this.reducedMotion.addEventListener("change", this.schedule);
@@ -120,15 +119,15 @@ class PondEngine {
 
     private measureContent() {
         const origin = this.canvas.getBoundingClientRect();
-        const measured = Array.from(document.querySelectorAll(AVOID_TARGETS), (el) => {
-            const b = el.getBoundingClientRect();
-            return {
+        const measured = Array.from(document.querySelectorAll(AVOID_TARGETS), (el) => el.getBoundingClientRect())
+            // The layout for the other screen size is display: none and measures as an empty box.
+            .filter((b) => b.width > 0 && b.height > 0)
+            .map((b) => ({
                 left: b.left - origin.left,
                 top: b.top - origin.top,
                 right: b.right - origin.left,
                 bottom: b.bottom - origin.top,
-            };
-        });
+            }));
         const boxes = mergeNearby(measured);
         this.renderer.setDimBoxes(boxes);
         this.world.avoid = boxes;
@@ -200,19 +199,19 @@ class PondEngine {
     };
 }
 
-type KoiPondProps = { isLight: boolean; className?: string; onStats?: (stats: PondStats) => void };
+type KoiPondProps = { className?: string; onStats?: (stats: PondStats) => void };
 
-export default function KoiPond({ isLight, className, onStats }: KoiPondProps) {
+export default function KoiPond({ className, onStats }: KoiPondProps) {
+    const isLight = useTheme().resolvedTheme === "light";
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const engineRef = useRef<PondEngine | null>(null);
-    // Read through a ref so a new callback doesn't tear down the engine.
-    const onStatsRef = useRef(onStats);
-    onStatsRef.current = onStats;
+    // An Effect Event, so a new callback doesn't tear down the engine.
+    const emitStats = useEffectEvent((stats: PondStats) => onStats?.(stats));
 
     useEffect(() => {
         const canvas = canvasRef.current;
         if (!canvas) return;
-        const engine = new PondEngine(canvas, isLight, (stats) => onStatsRef.current?.(stats));
+        const engine = new PondEngine(canvas, (stats) => emitStats(stats));
         engineRef.current = engine;
         return () => {
             engine.destroy();
@@ -220,6 +219,7 @@ export default function KoiPond({ isLight, className, onStats }: KoiPondProps) {
         };
     }, []);
 
+    // Also sets the first theme: it runs right after the engine is created, before any frame is drawn.
     useEffect(() => {
         engineRef.current?.setTheme(isLight);
     }, [isLight]);

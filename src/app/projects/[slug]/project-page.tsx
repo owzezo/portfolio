@@ -3,9 +3,8 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "motion/react";
 import { useEffect, useRef, useState } from "react";
-import { useGlobal } from "../../../context-providers/global-provider";
 import MobileNav from "../../components/mobile-nav";
 import TopNav from "../../components/top-nav";
 import InlineLink from "../../components/inline-link";
@@ -31,14 +30,9 @@ const MEDIA =
     "block aspect-video h-auto w-full rounded-[6px] bg-black shadow-[0_0_0_1px_color-mix(in_srgb,var(--foreground-color)_8%,transparent)]";
 
 export default function ProjectPage({ slug }: { slug: string }) {
-    const { isLight, isMobile, toggleTheme } = useGlobal();
     const router = useRouter();
     const project = projects.find((p) => p.slug === slug);
-    const [still, setStill] = useState(false);
-
-    useEffect(() => {
-        setStill(window.matchMedia("(prefers-reduced-motion: reduce)").matches);
-    }, []);
+    const still = useReducedMotion() ?? false;
 
     // Wheel scrolling glides to where it's headed instead of stepping, the same feel as the projects strip.
     useEffect(() => {
@@ -92,13 +86,13 @@ export default function ProjectPage({ slug }: { slug: string }) {
             window.removeEventListener("scroll", update);
             window.removeEventListener("resize", update);
         };
-    }, [hasCover, isMobile]);
+    }, [hasCover]);
 
     // Arriving with a slide (from the strip or a neighbouring project), the page slides in as soon as it has rendered.
     const [arrivedSliding] = useState(() => typeof window !== "undefined" && isTransitioning());
     useEffect(() => {
-        if (isMobile !== null) finishTransition();
-    }, [isMobile]);
+        finishTransition();
+    }, []);
     useEffect(() => {
         sessionStorage.setItem(LAST_PROJECT_KEY, slug);
     }, [slug]);
@@ -109,16 +103,13 @@ export default function ProjectPage({ slug }: { slug: string }) {
     const prev = pages[(at - 1 + pages.length) % pages.length];
     const next = pages[(at + 1) % pages.length];
 
-    if (isMobile === null || !project?.page) return null;
+    if (!project?.page) return null;
     const { page } = project;
 
     return (
-        <div className={`min-h-screen w-full bg-background text-foreground ${isLight ? "light" : "dark"}`}>
-            {isMobile ? (
-                <MobileNav isLight={isLight} toggleTheme={toggleTheme} />
-            ) : (
-                <TopNav isLight={isLight} toggleTheme={toggleTheme} overCover={overCover} />
-            )}
+        <div className="min-h-screen w-full bg-background text-foreground">
+            <MobileNav />
+            <TopNav overCover={overCover} />
             {page.cover && (
                 // Full-bleed cover. On desktop it runs to the top edge with the nav over it; on mobile it sits under the
                 // nav pill (padding, not margin, so the page colour shows above it). The lower edge fades into the page.
@@ -128,7 +119,7 @@ export default function ProjectPage({ slug }: { slug: string }) {
                             src={page.cover}
                             alt=""
                             fill
-                            priority
+                            preload
                             sizes="100vw"
                             quality={IMAGE_QUALITY}
                             className="object-cover object-[78%_top]"
@@ -192,7 +183,7 @@ export default function ProjectPage({ slug }: { slug: string }) {
                             alt={`${project.name}, ${page.tagline}`}
                             width={1920}
                             height={1080}
-                            priority
+                            preload
                             sizes="(min-width: 1024px) 56rem, 100vw"
                             quality={IMAGE_QUALITY}
                             className={MEDIA}
@@ -412,7 +403,7 @@ function Gallery({ title, shots, start = 0 }: { title?: string; shots: Shot[]; s
     const [active, setActive] = useState(start);
     const current = shots[active];
     // Hover only opens a panel once the cursor settles, so sweeping past the row on the way down does nothing.
-    const intent = useRef<ReturnType<typeof setTimeout>>();
+    const intent = useRef<ReturnType<typeof setTimeout>>(undefined);
     const hoverOpen = (i: number) => {
         clearTimeout(intent.current);
         intent.current = setTimeout(() => setActive(i), HOVER_INTENT_MS);
